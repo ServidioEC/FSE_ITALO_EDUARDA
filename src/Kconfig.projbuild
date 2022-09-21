@@ -1,13 +1,13 @@
-menu "Configuração do Wifi Configuration"
+menu "Wifi Configuration"
 
     config ESP_WIFI_SSID
-        string "TP-Link_858E"
+        string "WiFi SSID"
         default "ssid"
         help
             Nome da rede Wifi.
 
     config ESP_WIFI_PASSWORD
-        string "@@trindade##"
+        string "Senha do Wifi"
         default "minha_senha"
         help
             Senha do WiFi (WPA or WPA2).

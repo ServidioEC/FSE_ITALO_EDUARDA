@@ -129,6 +129,14 @@ CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
 
 #
+# Wifi Configuration
+#
+CONFIG_ESP_WIFI_SSID="ssid"
+CONFIG_ESP_WIFI_PASSWORD="minha_senha"
+CONFIG_ESP_MAXIMUM_RETRY=5
+# end of Wifi Configuration
+
+#
 # Compiler options
 #
 CONFIG_COMPILER_OPTIMIZATION_DEFAULT=y
