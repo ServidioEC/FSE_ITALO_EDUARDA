@@ -38,6 +38,9 @@ static struct dht11_reading last_read;
 float temperatura = 0.0;
 float umidade = 0.0;
 
+float temperatura_media = 0.0;
+float umidade_media = 0.0;
+
 extern void mqtt_envia_mensagem(char *topico, char *mensagem);
 
 static int _waitOrTimeout(uint16_t microSeconds, int level)
@@ -101,8 +104,14 @@ void DHT11_init()
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     dht_gpio = GPIO_NUM_4;
 
-    temperatura = DHT11_read().temperature;
-    umidade = DHT11_read().humidity;
+    float temp_lida = DHT11_read().temperature;
+    float umid_lida = DHT11_read().humidity;
+
+    if (temp_lida != -1 && umid_lida != -1)
+    {
+        temperatura = temp_lida;
+        umidade = umid_lida;
+    }
 }
 
 struct dht11_reading DHT11_read()
@@ -163,5 +172,21 @@ void envia_dados_sensor_dht11()
 
         sprintf(mensagem, "{\"Umidade\": %f}", umidade);
         mqtt_envia_mensagem("v1/devices/me/telemetry", mensagem);
+    }
+}
+
+void envia_media_dht11()
+{
+    temperatura_media = temperatura;
+    umidade_media = umidade;
+    while (true)
+    {
+        temperatura_media = (temperatura_media + temperatura) / 2.0;
+        umidade_media = (umidade_media + umidade) / 2.0;
+
+        // printf("Temperatura Media: %.2f\n", temperatura_media);
+        // printf("Umidade Media: %.2f\n", umidade_media);
+
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
 }

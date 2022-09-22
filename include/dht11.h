@@ -44,5 +44,6 @@ struct dht11_reading
 struct dht11_reading DHT11_read();
 void DHT11_init();
 void envia_dados_sensor_dht11();
+void envia_media_dht11();
 
 #endif
