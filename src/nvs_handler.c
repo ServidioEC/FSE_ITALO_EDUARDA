@@ -1,13 +1,26 @@
 #include <stdio.h>
 #include <string.h>
 #include "esp_log.h"
-#include "nvs.h"
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
 
-int32_t le_valor_nvs()
+#include "nvs_handler.h"
+
+void inicia_nvs()
+{
+    // Inicializa o NVS
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+}
+
+int32_t le_valor_nvs(char *chave)
 {
     // Inicia o acesso à partição padrão nvs
     ESP_ERROR_CHECK(nvs_flash_init());
@@ -30,7 +43,7 @@ int32_t le_valor_nvs()
     }
     else
     {
-        esp_err_t res = nvs_get_i32(particao_padrao_handle, "contador", &valor);
+        esp_err_t res = nvs_get_i32(particao_padrao_handle, chave, &valor);
 
         switch (res)
         {
@@ -51,7 +64,7 @@ int32_t le_valor_nvs()
     return valor;
 }
 
-void grava_valor_nvs(int32_t valor)
+void grava_valor_nvs(char *chave, int32_t valor)
 {
     ESP_ERROR_CHECK(nvs_flash_init());
     // ESP_ERROR_CHECK(nvs_flash_init_partition("DadosNVS"));
@@ -65,7 +78,7 @@ void grava_valor_nvs(int32_t valor)
     {
         ESP_LOGE("NVS", "Namespace: armazenamento, não encontrado");
     }
-    esp_err_t res = nvs_set_i32(particao_padrao_handle, "contador", valor + 1);
+    esp_err_t res = nvs_set_i32(particao_padrao_handle, chave, valor);
     if (res != ESP_OK)
     {
         ESP_LOGE("NVS", "Não foi possível escrever no NVS (%s)", esp_err_to_name(res));
@@ -74,13 +87,13 @@ void grava_valor_nvs(int32_t valor)
     nvs_close(particao_padrao_handle);
 }
 
-void app_main(void)
+void nvs_usage(void)
 {
     int32_t valor_lido = 0;
-    valor_lido = le_valor_nvs();
+    valor_lido = le_valor_nvs("chave");
     if (valor_lido == -1)
     {
         valor_lido = 0;
     }
-    grava_valor_nvs(valor_lido);
+    grava_valor_nvs("chave", valor_lido);
 }

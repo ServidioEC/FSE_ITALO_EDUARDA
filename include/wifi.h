@@ -3,5 +3,6 @@
 
 void wifi_start();
 void wifi_reconnect();
+void wifi_stop();
 
 #endif

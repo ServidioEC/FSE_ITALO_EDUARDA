@@ -1,6 +1,10 @@
 {
     "files.associations": {
         "nvs_flash.h": "c",
-        "dht11.h": "c"
+        "dht11.h": "c",
+        "esp_wifi.h": "c",
+        "task.h": "c",
+        "stdio.h": "c",
+        "esp_http_client.h": "c"
     }
 }
