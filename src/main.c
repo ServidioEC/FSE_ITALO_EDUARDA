@@ -1,69 +1,32 @@
 #include <stdio.h>
 #include <string.h>
-#include "nvs_flash.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
-#include "esp_http_client.h"
 #include "esp_sleep.h"
 #include "esp_log.h"
 #include "freertos/semphr.h"
-#include "esp32/rom/uart.h"
-#include "driver/gpio.h"
-#include "driver/rtc_io.h"
 
 #include "wifi.h"
 #include "mqtt.h"
+#include "nvs_handler.h"
 #include "dht11.h"
-
-#define BUTTON 0
+#include "pwm.h"
+#include "button.h"
+#include "led.h"
 
 xSemaphoreHandle conexaoWifiSemaphore;
 xSemaphoreHandle conexaoMQTTSemaphore;
 
-void inicia_nvs()
+void modo_enegia()
 {
-  // Inicializa o NVS
-  esp_err_t ret = nvs_flash_init();
-  if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
-  {
-    ESP_ERROR_CHECK(nvs_flash_erase());
-    ret = nvs_flash_init();
-  }
-  ESP_ERROR_CHECK(ret);
-}
-
-void controle_temp()
-{
-  DHT11_init();
-  // xTaskCreate(&envia_media_dht11, "Envia Media DHT11", 2098, NULL, 1, NULL);
-  xTaskCreate(&envia_dados_sensor_dht11, "Envia DHT11", 2098, NULL, 1, NULL);
+  config_pwm();
+  xTaskCreate(&DHT11_routine, "Rotina do DHT11", 4096, NULL, 1, NULL);
 }
 
 void modo_low_power()
 {
-  gpio_pad_select_gpio(BUTTON);
-  gpio_set_direction(BUTTON, GPIO_MODE_INPUT);
-  gpio_wakeup_enable(BUTTON, GPIO_INTR_LOW_LEVEL);
-
-  esp_sleep_enable_gpio_wakeup();
-
-  while (true)
-  {
-    mqtt_client_stop();
-    uart_tx_wait_idle(CONFIG_ESP_CONSOLE_UART_NUM);
-    esp_light_sleep_start();
-
-    if (rtc_gpio_get_level(BUTTON) == 0)
-    {
-      wifi_reconnect();
-      if (xSemaphoreTake(conexaoWifiSemaphore, portMAX_DELAY))
-      {
-        mqtt_client_restart();
-      }
-
-      vTaskDelay(pdMS_TO_TICKS(500));
-    }
-  }
+  xTaskCreate(&led_routine, "Rotina do led", 4096, NULL, 1, NULL);
+  // xTaskCreate(&button_routine, "Rotina do botão", 4096, NULL, 1, NULL);
 }
 
 void conectadoWifi(void *params)
@@ -84,15 +47,13 @@ void trataComunicacaoComServidor(void *params)
   {
 #ifdef CONFIG_ENERGY_MODE
     ESP_LOGI("MODO", "Modo Energia");
-    while (true)
-    {
-      controle_temp();
-    }
+    modo_enegia();
 #else
     ESP_LOGI("MODO", "Modo Bateria");
-    xTaskCreate(&modo_low_power, "Modo Low Power", 4096, NULL, 1, NULL);
+    modo_low_power();
 #endif
   }
+  vTaskDelete(NULL);
 }
 
 void app_main(void)
@@ -101,6 +62,7 @@ void app_main(void)
 
   conexaoWifiSemaphore = xSemaphoreCreateBinary();
   conexaoMQTTSemaphore = xSemaphoreCreateBinary();
+
   wifi_start();
 
   xTaskCreate(&conectadoWifi, "Conexão ao MQTT", 4096, NULL, 1, NULL);

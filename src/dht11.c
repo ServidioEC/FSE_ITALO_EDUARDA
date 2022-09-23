@@ -31,6 +31,8 @@
 
 #include "dht11.h"
 
+#include "nvs_handler.h"
+
 static gpio_num_t dht_gpio = GPIO_NUM_4;
 static int64_t last_read_time = -2000000;
 static struct dht11_reading last_read;
@@ -161,9 +163,11 @@ void DHT11_routine()
 
         sprintf(mensagem, "{\"Temperatura\": %f}", temperatura);
         mqtt_envia_mensagem("v1/devices/me/telemetry", mensagem);
+        grava_valor_nvs("Temperatura", temperatura);
 
         sprintf(mensagem, "{\"Umidade\": %f}", umidade);
         mqtt_envia_mensagem("v1/devices/me/telemetry", mensagem);
+        grava_valor_nvs("Umidade", umidade);
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }

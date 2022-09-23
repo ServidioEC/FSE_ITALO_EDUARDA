@@ -83,6 +83,10 @@ void grava_valor_nvs(char *chave, int32_t valor)
     {
         ESP_LOGE("NVS", "Não foi possível escrever no NVS (%s)", esp_err_to_name(res));
     }
+    else
+    {
+        ESP_LOGI("NVS", "%s gravado com sucesso", chave);
+    }
     nvs_commit(particao_padrao_handle);
     nvs_close(particao_padrao_handle);
 }
