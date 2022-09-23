@@ -31,7 +31,7 @@
 
 #include "dht11.h"
 
-static gpio_num_t dht_gpio;
+static gpio_num_t dht_gpio = GPIO_NUM_4;
 static int64_t last_read_time = -2000000;
 static struct dht11_reading last_read;
 
@@ -98,22 +98,6 @@ static struct dht11_reading _crcError()
     return crcError;
 }
 
-void DHT11_init()
-{
-    /* Wait 1 seconds to make the device pass its initial unstable status */
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    dht_gpio = GPIO_NUM_4;
-
-    float temp_lida = DHT11_read().temperature;
-    float umid_lida = DHT11_read().humidity;
-
-    if (temp_lida != -1 && umid_lida != -1)
-    {
-        temperatura = temp_lida;
-        umidade = umid_lida;
-    }
-}
-
 struct dht11_reading DHT11_read()
 {
     /* Tried to sense too son since last read (dht11 needs ~2 seconds to make a new read) */
@@ -158,12 +142,20 @@ struct dht11_reading DHT11_read()
     }
 }
 
-void envia_dados_sensor_dht11()
+void DHT11_routine()
 {
     char mensagem[50];
     while (true)
     {
-        vTaskDelay(10000 / portTICK_PERIOD_MS);
+        float temp_lida = DHT11_read().temperature;
+        float umid_lida = DHT11_read().humidity;
+
+        if (temp_lida != -1 && umid_lida != -1)
+        {
+            temperatura = temp_lida;
+            umidade = umid_lida;
+        }
+
         printf("Temperatura: %.2f\n", temperatura);
         printf("Umidade: %.2f\n", umidade);
 
@@ -172,21 +164,7 @@ void envia_dados_sensor_dht11()
 
         sprintf(mensagem, "{\"Umidade\": %f}", umidade);
         mqtt_envia_mensagem("v1/devices/me/telemetry", mensagem);
-    }
-}
 
-void envia_media_dht11()
-{
-    temperatura_media = temperatura;
-    umidade_media = umidade;
-    while (true)
-    {
-        temperatura_media = (temperatura_media + temperatura) / 2.0;
-        umidade_media = (umidade_media + umidade) / 2.0;
-
-        // printf("Temperatura Media: %.2f\n", temperatura_media);
-        // printf("Umidade Media: %.2f\n", umidade_media);
-
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
